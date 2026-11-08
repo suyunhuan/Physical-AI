@@ -1,0 +1,39 @@
+---
+description: RSI 研发工作流核心约束（具身长程家庭任务 / 多技术路线雷达 / openpi 仅作实验基座 / 去重与评测口径）
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# 业务方向与研究边界
+研究对象是具身智能长程家庭任务（Long-horizon Household Manipulation）。openpi / π 系列只是代码实现与实验基座，不代表研究范围仅限 VLA。
+论文雷达、每日研读和 idea 池必须开放覆盖以下路线：VLA/端到端学习、分层规划与 TAMP、世界模型/MPC、强化学习与自改进、数据与仿真/sim2real、
+感知记忆与场景理解、具身基础模型/跨形态通用策略、安全恢复与评测体系。不得因某篇论文不是 VLA 就降权或跳过。
+重点方法论：VLA、flow matching / diffusion policy、hierarchical planning、LLM/VLM planner、TAMP、world model、model-based RL、
+MPC、mobile manipulation、open-vocabulary manipulation、dexterous manipulation、subgoal decomposition、skill chaining、
+long-horizon planning、data engine、demonstration / LeRobot 数据、RL fine-tuning、sim2real、closed-loop evaluation、
+test-time scaling、self-improvement、3D scene graph、affordance、cross-embodiment、failure recovery。
+
+# 短期业务验证主线（强相关论文与 idea 的筛选基准）
+1. 长程任务的子目标分解、规划与执行监控（hierarchical planning / TAMP / subgoal / skill chaining / world model planning / failure recovery）
+2. 家庭场景的数据效率、泛化与可靠评测（少样本学习、跨物体跨任务跨场景泛化、sim2real、open-vocab、合成数据、闭环评测）
+
+# 代码基座（开源，仅供方案设计与验证环节结合；论文检索环节不涉及）
+- openpi（https://github.com/Physical-Intelligence/openpi，本仓库镜像于 suyunhuan/Physical-AI）：
+  - 模型结构：π0 / π0.5 的模型定义（典型位置 src/openpi/models，以实际结构为准）
+  - 训练 / 微调：训练脚本与配置（典型位置 scripts/、src/openpi/training）
+  - 数据管线：LeRobot 数据集服务与自定义数据转换（典型位置 scripts/serve_datasets*、数据转换脚本）
+  - 推理与评测：inference examples、LIBERO 等仿真评测接入
+
+# 硬规则
+1. 论文相关任务必须先读 rsi/paper-log.md 去重，推送后立即登记；同一工作只推一次，跨天更新注明"更新版"。
+2. 论文相关任务必须先读 rsi/keywords.md，按最新关键词与业务方向筛选。
+3. 每日推送口径：3 篇前沿 Top + 1-2 篇短期强相关（共 4-5 篇）。
+4. idea 卡片字段固定：标题/机构/发布日期 · 技术路线（R1-R8）· 一句话问题 · 核心方法（100 字内）· 与家庭长程任务的可迁移点 ·
+   可迁移 idea（标注：可直接落地 / 需改造 / 仅参考）· 证据强度（实验设置、数据集规模、是否开源、基线）· 不确定性。
+   研读卡片不要求代码仓映射；与 openpi 或外部组件的兼容性只在 C3/C4 分析，不参与 C1/C2 的检索和筛选。
+5. 不编造论文与代码结论；读不到的细节标注"未核实"；每张卡片核心内容 ≤300 字。
+6. 所有实验必须使用固定评测口径（如 LIBERO 固定 suite、真实机固定任务集与成功判定），
+   劣化如实记录；好则保留、差则回退，禁止调参凑数、禁止选择性报告指标。
+7. 方案必须先判断技术路线（VLA、分层规划/TAMP、世界模型/MPC、RL/自改进、数据仿真、感知记忆、基础模型、安全评测），再评估能否落到 openpi 真实文件 / 函数 / 配置 / 数据字段级别；不能直接落到 openpi 的高价值路线也要保留为“外部基线 / 后续架构候选”，禁止因实现栈限制而忽略。
+8. 涉及长程任务时，同时报告端到端任务完成率与子目标（subgoal）级成功率，避免只报单步指标。
+9. 每日雷达逐项检查 R1-R8；研读按最近 7 次运行滚动统计路线覆盖，优先补检覆盖不足的方向。若候选全部是 VLA，主动补检非 VLA 工作；没有合格结果则如实披露，不强凑篇数或路线配额。路线可交叉归类，也可新增 R9+，八类种子不是封闭清单。
