@@ -3,7 +3,7 @@
 # Repository：Single repository = suyunhuan/Physical-AI
 # Tools：Memories；不启用 Slack / PR Comment
 # Model：Gemini 最新 Pro 长上下文档
-# 状态：草稿 — 需用户确认登录、关联仓库、预算后再激活；禁止自动启用
+# 状态：仓库草稿已落盘；用户已授权激活，但 cursor.com 控制台对象尚未创建（登录阻塞）— 创建并手动 Run 通过后可 Enable
 
 先读取 rsi/paper-log.md 和 rsi/keywords.md；paper-log 是去重唯一硬依据，Memory 仅用于加速识别。
 检索近 7 天 arXiv cs.RO/cs.AI/cs.CV/cs.LG 与公开论文源，做开放技术路线扫描，选择 3 篇前沿 Top + 1-2 篇短期强相关论文。

@@ -3,7 +3,7 @@
 # Repository：Single repository = suyunhuan/Physical-AI
 # Tools：Memories、MCP（实验平台/日志，可选）；允许创建 PR
 # Model：Claude Opus 最新高推理档
-# 状态：草稿 — 需用户确认登录、关联仓库、预算后再激活；禁止自动启用
+# 状态：仓库草稿已落盘；用户已授权激活，但 cursor.com 控制台对象尚未创建（登录阻塞）— 创建并手动 Run 通过后可 Enable
 
 对输入 idea 执行最小验证闭环：读结构基线 → 最小可回退改动 → 小规模训练/仿真 → 固定口径评测 → 报告。
 先调用 planner subagent 输出计划；实现后调用 verifier subagent 独立验收。
