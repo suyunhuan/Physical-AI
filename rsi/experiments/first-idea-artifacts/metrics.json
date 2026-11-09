@@ -1,0 +1,136 @@
+{
+  "idea": "subgoal_checklist_gated_recovery",
+  "H": {
+    "task_slice": "8 wheeled dual-arm household long-horizon chains",
+    "embodiment": "wheeled_base + bimanual grippers (abstract sim)",
+    "data_recipe": "synthetic demos + subgoal-coverage filter (>=0.4 positive)",
+    "eval": "FIXED_EVAL_SUITE, 5 episodes/task, E2E + Q-score"
+  },
+  "blockers": [
+    "No GPU / nvidia-smi missing: π0 fine-tune blocked; CPU checklist smoke train only."
+  ],
+  "filter_stats": {
+    "kept": 800,
+    "positive_rate": 0.61625,
+    "n_pos": 493,
+    "n_neg_kept": 307,
+    "filtered": true
+  },
+  "train": {
+    "steps": 400,
+    "device": "cpu",
+    "history_tail": [
+      {
+        "step": 360,
+        "loss": 0.6480407000972602,
+        "acc": 0.61875
+      },
+      {
+        "step": 380,
+        "loss": 0.6481942979717061,
+        "acc": 0.6175
+      },
+      {
+        "step": 399,
+        "loss": 0.6479429207086116,
+        "acc": 0.6175
+      }
+    ],
+    "weights": [
+      -0.6339290197524609,
+      0.9289135352756877,
+      0.43163363951846606,
+      0.21453415831664577
+    ]
+  },
+  "baseline": {
+    "n_episodes": 40,
+    "mean_q_score": 0.15625,
+    "std_q_score": 0.2641466212163237,
+    "e2e_success_rate": 0.025,
+    "per_task": {
+      "wb_kitchen_cup_to_sink": {
+        "mean_q_score": 0.25,
+        "e2e_success_rate": 0.0
+      },
+      "wb_open_drawer_stow_bowl": {
+        "mean_q_score": 0.2,
+        "e2e_success_rate": 0.0
+      },
+      "wb_table_clear_two_items": {
+        "mean_q_score": 0.32,
+        "e2e_success_rate": 0.2
+      },
+      "wb_fridge_fetch_bottle": {
+        "mean_q_score": 0.04,
+        "e2e_success_rate": 0.0
+      },
+      "wb_wipe_spill_then_bin": {
+        "mean_q_score": 0.0,
+        "e2e_success_rate": 0.0
+      },
+      "wb_dual_handover_pot": {
+        "mean_q_score": 0.28,
+        "e2e_success_rate": 0.0
+      },
+      "wb_laundry_basket_transfer": {
+        "mean_q_score": 0.12000000000000002,
+        "e2e_success_rate": 0.0
+      },
+      "wb_multi_room_deliver_mug": {
+        "mean_q_score": 0.04,
+        "e2e_success_rate": 0.0
+      }
+    }
+  },
+  "checklist_gated": {
+    "n_episodes": 40,
+    "mean_q_score": 0.325,
+    "std_q_score": 0.3916312040683173,
+    "e2e_success_rate": 0.2,
+    "per_task": {
+      "wb_kitchen_cup_to_sink": {
+        "mean_q_score": 0.6,
+        "e2e_success_rate": 0.6
+      },
+      "wb_open_drawer_stow_bowl": {
+        "mean_q_score": 0.44000000000000006,
+        "e2e_success_rate": 0.2
+      },
+      "wb_table_clear_two_items": {
+        "mean_q_score": 0.44000000000000006,
+        "e2e_success_rate": 0.4
+      },
+      "wb_fridge_fetch_bottle": {
+        "mean_q_score": 0.36,
+        "e2e_success_rate": 0.2
+      },
+      "wb_wipe_spill_then_bin": {
+        "mean_q_score": 0.4,
+        "e2e_success_rate": 0.2
+      },
+      "wb_dual_handover_pot": {
+        "mean_q_score": 0.08,
+        "e2e_success_rate": 0.0
+      },
+      "wb_laundry_basket_transfer": {
+        "mean_q_score": 0.2,
+        "e2e_success_rate": 0.0
+      },
+      "wb_multi_room_deliver_mug": {
+        "mean_q_score": 0.08,
+        "e2e_success_rate": 0.0
+      }
+    }
+  },
+  "delta": {
+    "mean_q_score": 0.16875,
+    "e2e_success_rate": 0.17500000000000002
+  },
+  "suite_size": 8,
+  "plots": [
+    "rsi/experiments/first-idea-artifacts/train_curves.png",
+    "rsi/experiments/first-idea-artifacts/suite_metrics.png",
+    "rsi/experiments/first-idea-artifacts/per_task_qscore.png"
+  ]
+}
