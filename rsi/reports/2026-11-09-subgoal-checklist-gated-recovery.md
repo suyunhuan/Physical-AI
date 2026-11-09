@@ -39,3 +39,8 @@
 ## 风险
 - 当前 sim 为可复现 stub，**不是**官方 B1K 分数  
 - 无真机、无权重；不得把本结果申报为榜单成绩
+
+## 本机 GPU / 真 openpi 续跑
+见 `rsi/docs/local-gpu-openpi-b1k.md`：
+- Mac：`--mode cpu-stub|all-safe`
+- Linux+CUDA：`DOWNLOAD_WEIGHTS=1 python3 scripts/rsi/run_openpi_train.py --config pi0_libero_checklist_smoke`
