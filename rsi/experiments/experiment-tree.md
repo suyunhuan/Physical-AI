@@ -9,4 +9,4 @@
 
 ## 经验区（一次性记录；长期规则回写 `.cursor/rules/rsi-core.mdc`）
 
-- （暂无）
+- 2026-11-09 首次 C8 周复盘：无实验。`rsi.md` 的评测口径 / 迭代预算 `<N>` 未填，本环境无 GPU 和权重，本轮实验预算按 0 处理；`examples/libero/main.py` 只统计端到端成功率，缺子目标级指标。详见 `rsi/experiments/2026-11-09-rsi-report.md`。
