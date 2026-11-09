@@ -3,7 +3,7 @@
 # Repository：Single repository = suyunhuan/Physical-AI
 # Tools：Memories、MCP（可选）；允许创建 PR
 # Model：Claude Opus 最新高推理档；预算内轻量步骤可交给 Auto/Composer
-# 状态：草稿 — 需用户确认登录、关联仓库、预算后再激活；禁止自动启用
+# 状态：仓库草稿已落盘；用户已授权激活，但 cursor.com 控制台对象尚未创建（登录阻塞）— 创建并手动 Run 通过后可 Enable
 
 读取 rsi/experiments/experiment-tree.md、rsi/reports 与 rsi/plans，生成本周 RSI 复盘：
 有效改动、失败假设、指标变化、下一轮预算建议。只允许提出最多 3 个下一步候选，按预期收益/成本/风险排序。

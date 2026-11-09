@@ -1,109 +1,178 @@
 # RSI 安装报告 · Physical-AI
-# 日期：2026-11-08
+# 日期：2026-11-09（更新：套餐已解锁；控制台创建仍缺浏览器登录会话）
 # 仓库：https://github.com/suyunhuan/Physical-AI
-# 分支：`cursor/sync-openpi-rsi-bf70`
 
-## 0. 同步动作摘要
+## 0. 合并与部署进度
 
 | 项 | 结果 |
 |---|---|
-| 安装前 Physical-AI 状态 | 仅 Initial commit + `# Physical-AI` README（远端 size≈0） |
-| openpi 引入方式 | `git remote add openpi` → `fetch openpi/main` → `merge --allow-unrelated-histories`（保留双方历史，非 force-push） |
-| README 冲突 | 保留 openpi 全文，顶部增加 Physical-AI / RSI 说明 |
-| Submodules | 已 `git submodule update --init --recursive`（`third_party/aloha`、`third_party/libero`） |
-| 权重 / GPU 训练 / 机器人部署 | **未执行**（按约束） |
+| PR #1 openpi+RSI 树 | **已合并** `main`（`2a0b81c`） |
+| 用户套餐 / Cloud Agents | **用户确认已解锁** |
+| 控制台 5 Automations | **尚未创建**（Agent 浏览器停在 `authenticator.cursor.sh`，无会话） |
+| 权重 / 训练 / 真机 | **未执行** |
 
-## 1. 已落盘
+## 1. 已落盘（`main`）
 
-### 1.1 代码基座
-- openpi `main` 历史已合并进本仓库工作分支
-- 已核对典型结构存在：`src/openpi/models`、`src/openpi/training`、`scripts/train.py`、`third_party/libero`
+Rules / 8 Commands / 3 Subagents / 5 Automation **仓库草稿** / `rsi/*` 模板 / `rsi/model-selection.md` — 均已在 `main`。
 
-### 1.2 Cursor RSI 配置树
-| 类别 | 路径 | 数量 |
-|---|---|---|
-| Rules | `.cursor/rules/rsi-core.mdc` | 1 |
-| Commands | `.cursor/commands/{paper-daily,keyword-radar,idea-loop,feature-design,parallel-dev,exp-run,retro,rsi}.md` | 8 |
-| Subagents | `.cursor/agents/{planner,implementer,verifier}.md` | 3 |
-| Automation Prompts（草稿） | `.cursor/automations/*-automation.md` | 5 |
-| 状态模板 | `rsi/keywords.md`、`rsi/paper-log.md`、`rsi/experiments/experiment-tree.md` | 3 |
-| 子目录 | `rsi/daily/`、`rsi/reports/`、`rsi/plans/`、`rsi/experiments/` | 4 |
-| 选模映射 | `rsi/model-selection.md` | 1 |
+## 2. Automations 控制台状态（逐条）
 
-静态检查：上述文件与目录均存在；无覆盖既有实验日志（安装前 `rsi/` 不存在）。
+| # | 名称 | URL | created? | enabled? | 状态 |
+|---|---|---|---|---|---|
+| 1 | RSI-关键词雷达 | — | no | no | **blocked**：需 cursor.com 登录会话 |
+| 2 | RSI-每日论文日报 | — | no | no | **blocked**：同上 |
+| 3 | RSI-单点Idea闭环 | — | no | no | **blocked**：同上 |
+| 4 | RSI-PR独立评审 | — | no | no | **blocked**：同上 |
+| 5 | RSI-自迭代调度 | — | no | no | **blocked**：同上 |
 
-## 2. 待界面操作（未声称已配置）
+**工具尝试（2026-11-09）**：computer-use 打开 automations → 重定向登录页；无 Automations 创建 API（仅 UUID 查询）。套餐解锁 ≠ 本 VM 浏览器已登录。
 
-1. **Cursor Settings → Rules**：确认 project rules 发现 `.cursor/rules/rsi-core.mdc` 且 Always Apply 生效。
-2. **本地模型选择器**：按 `rsi/model-selection.md` 为 C1–C8 选模；**Max Mode 默认关闭**。
-3. **命令菜单**：在本地 Chat/Composer 输入 `/`，确认 8 个自定义命令可见。
-4. **Subagent 解析**：确认 `planner` / `implementer` / `verifier` frontmatter 可被当前 Cursor 解析；若 `claude-opus-5[effort=high]` 或 `gpt-5.6-sol` 解析失败，按 `rsi/model-selection.md` 改为账号下拉中的等价最新 ID。
-5. **Automations 控制台**（见 §4 清单）：登录、关联 `suyunhuan/Physical-AI`、选模、设预算、**先禁用保存**；**未经用户确认不得激活**。
-6. **套餐 / Cloud Agents 权限**：若控制台提示 Upgrade，需先升级到含 Cloud Agents 的计划。
-7. **GPU / 训练预算 / 机器人硬件**：本安装未验证；进入 C3/C6 前需用户确认资源。
+**续配路径 A（推荐）**：打开 [Try Live](bc-088004b6-f8ec-5860-a27e-d489b3dea0f0#desktop) → 在该桌面登录 Cursor → 回复「已登录」→ Agent 代建 5 条。  
+**续配路径 B**：本机打开 https://cursor.com/automations/new ，按下面 §4 **一次性粘贴**。
+
+手册默认：先保存 **Disabled** → 手动 Run 通过后再 Enable。当前因未创建，**无可 Enable 项**；创建后建议先 Disabled，Run 通过再启用 1/2/4/5（3 保持 Manual）。
 
 ## 3. 已测试 / 未测试
 
 ### 已测试
-- [x] 远端仓库可读写（fetch / 即将 push）
-- [x] openpi 历史非破坏合并 + submodule checkout
-- [x] RSI 目录树静态存在性检查（1 rule / 8 commands / 3 agents / 5 automation prompts / rsi 模板与子目录）
-- [x] Automation Prompt 头字段含 Trigger / Repository / Tools / Model / 禁用状态说明
-- [x] 本 Cloud Agent 环境可见模型系列已写入 `rsi/model-selection.md`
+- [x] PR #1 合并
+- [x] 套餐解锁（用户声明）
+- [x] 浏览器访问 automations → 登录墙（无会话）
 
 ### 未测试
-- [ ] 本地 `/` 命令菜单实际触发
-- [ ] project rules 在新会话中实际加载
-- [ ] Subagent 实际拉起与 frontmatter 模型解析
-- [ ] `/paper-daily`、`/keyword-radar` 端到端运行（安装阶段按手册跳过）
-- [ ] worktree / 并行 subagent 隔离
-- [ ] Automations 控制台创建、手动 Run、Scheduled 启用
-- [ ] `/automate` 本地斜杠命令（见下）
-- [ ] 任何模型权重下载、微调、LIBERO 评测、真机部署
+- [ ] 控制台创建 / 手动 Run / Enable
+- [ ] 本地 `/`、Rules、业务命令
+- [ ] 权重 / 训练 / 真机
 
-## 4. `/automate` 可用性与控制台填写清单
+## 4. 一次性填写清单（路径 B · 逐字段）
 
-**结论：本 Cloud Agent 会话无法代为调用本地 `/automate`，也无可写的 Automations 创建 API（仅有按 UUID 查询的 `get-automation`）。请用户在本机 Cursor 或 [cursor.com/automations/new](https://cursor.com/automations/new) 按下列清单填写；Prompt 正文直接粘贴仓库内对应文件。**
+入口：https://cursor.com/automations/new  
+Repository 一律：`suyunhuan/Physical-AI`（Single repository）  
+初始：**Disabled**（Save）→ 手动 Run → 再 Enable。
 
-| # | 名称 | Trigger | Repository | Tools | Model（建议） | Prompt 文件 | 初始状态 |
-|---|---|---|---|---|---|---|---|
-| 1 | RSI-关键词雷达 | Scheduled `30 6 * * *` | `suyunhuan/Physical-AI` | Memories；可选 MCP | Gemini 最新 Pro 长上下文 | `.cursor/automations/keyword-radar-automation.md` | **禁用** |
-| 2 | RSI-每日论文日报 | Scheduled `0 7 * * *` | 同上 | Memories | Gemini 最新 Pro 长上下文 | `.cursor/automations/paper-daily-automation.md` | **禁用** |
-| 3 | RSI-单点Idea闭环 | Manual / Webhook | 同上 | Memories；可选 MCP；允许 PR | Claude Opus 高推理档 | `.cursor/automations/idea-loop-automation.md` | **禁用** |
-| 4 | RSI-PR独立评审 | PR opened / PR pushed | 同上 | Comment on PR；Memories | Claude Opus 高推理档 | `.cursor/automations/pr-review-automation.md` | **禁用** |
-| 5 | RSI-自迭代调度 | Scheduled `0 18 * * 5` | 同上 | Memories；可选 MCP；允许 PR | Opus；轻量步骤 Auto | `.cursor/automations/rsi-automation.md` | **禁用** |
+---
 
-用户确认项（激活前必须）：① Cursor 登录与 Cloud Agents 套餐；② 仓库 `Physical-AI` 已关联；③ 用量/预算上限；④ 每条先手动 Run 一次通过。**当前未激活任何 Automation。**
+### 4.1 RSI-关键词雷达
+| 字段 | 值 |
+|---|---|
+| Name | `RSI-关键词雷达` |
+| Trigger | Scheduled · cron `30 6 * * *` |
+| Repository | `suyunhuan/Physical-AI` |
+| Tools | Memories；可选 MCP；**关** PR 评论 / Slack |
+| Model | Gemini 最新 Pro 长上下文档 |
+| Enabled | **先 Off** |
 
-## 5. 阻塞项（不猜测）
+**Prompt（整段粘贴）：**
+```
+读取 .cursor/rules/rsi-core.mdc、rsi/keywords.md 与 rsi/paper-log.md。
+按社区热度、机器人公司/大厂、创业公司、高校实验室、中文社区 5 路检索近 7 天信号，并按 8 类开放技术路线归类。
+输出 rsi/daily/YYYY-MM-DD-radar.md，并更新 rsi/keywords.md：新增关键词必须附日期、来源、相关性和技术路线；降权必须保留历史理由。
+必须检查路线覆盖矩阵；若 VLA 以外路线没有信号，明确标注“未覆盖”并补检，不得用 VLA 结果凑满 Top 5。
+将“本次关键词变更摘要”写入 Automation Memory；只提交 rsi/daily 与 rsi/keywords.md 的变更，不修改代码。
+若检索源不可用，标注“未覆盖”，不得编造来源。
+```
 
-| 阻塞 | 影响 | 需要 |
-|---|---|---|
-| Automations 需用户在控制台创建并确认预算 | 云端定时雷达/日报无法自动跑 | 用户登录 + 关联仓库 + 预算确认 |
-| Cloud Agents 套餐是否可用 | 未在本机验证 | 用户在控制台确认；若需 Upgrade 则先升级 |
-| 本地 UI 选模 / Max Mode / Rules 加载 | Agent 无法改用户本机设置 | 按 §2 人工操作 |
-| GPU（≥微调 22.5GB / 全量 70GB）未验证 | 阻塞 C3/C6 训练 | 用户提供机器或延后实验 |
-| 模型权重未下载（约束禁止） | 无法推理/微调 | 用户明确授权后再拉 checkpoint |
-| 真机 / 机器人访问 | 阻塞真实机长程评测 | 用户提供平台与安全规程 |
+---
 
-## 6. 验收对照（手册 §8，安装视角）
+### 4.2 RSI-每日论文日报
+| 字段 | 值 |
+|---|---|
+| Name | `RSI-每日论文日报` |
+| Trigger | Scheduled · cron `0 7 * * *` |
+| Repository | `suyunhuan/Physical-AI` |
+| Tools | Memories；**关** Slack / PR Comment |
+| Model | Gemini 最新 Pro 长上下文档 |
+| Enabled | **先 Off** |
+
+**Prompt：**
+```
+先读取 rsi/paper-log.md 和 rsi/keywords.md；paper-log 是去重唯一硬依据，Memory 仅用于加速识别。
+检索近 7 天 arXiv cs.RO/cs.AI/cs.CV/cs.LG 与公开论文源，做开放技术路线扫描，选择 3 篇前沿 Top + 1-2 篇短期强相关论文。
+候选必须标注技术路线，优先补检最近 7 次运行覆盖不足的路线；如果当天候选全是 VLA，补检 TAMP、世界模型/MPC、RL/自改进、仿真数据、感知记忆或安全评测方向。只收录合格工作，不为满足路线配额降低证据或相关性标准。
+逐篇输出 idea 卡片（字段遵循 rsi-core，必须含技术路线；不得在研读阶段因无法直接映射 openpi 而排除论文），写入 rsi/daily/YYYY-MM-DD.md。
+把本次推送追加到 rsi/paper-log.md，并在同一分支提交 rsi/daily 与 rsi/paper-log.md。
+若当天没有合格强相关论文，允许只推 3 篇前沿 Top，并在日报中说明原因；不得为凑数编造论文。
+```
+
+---
+
+### 4.3 RSI-单点Idea闭环
+| 字段 | 值 |
+|---|---|
+| Name | `RSI-单点Idea闭环` |
+| Trigger | Manual 或 Webhook |
+| Repository | `suyunhuan/Physical-AI` |
+| Tools | Memories；可选 MCP；**允许创建 PR** |
+| Model | Claude Opus 最新高推理档 |
+| Enabled | **先 Off**（Manual 可随时 Run） |
+
+**Prompt：**
+```
+对输入 idea 执行最小验证闭环：读结构基线 → 最小可回退改动 → 小规模训练/仿真 → 固定口径评测 → 报告。
+先调用 planner subagent 输出计划；实现后调用 verifier subagent 独立验收。
+报告写入 rsi/reports/YYYY-MM-DD-<idea-slug>.md，实验四元组写入 rsi/experiments/experiment-tree.md。
+所有改动进入独立分支并开 PR；verifier 未通过时禁止标记 ready for review。
+```
+
+---
+
+### 4.4 RSI-PR独立评审
+| 字段 | 值 |
+|---|---|
+| Name | `RSI-PR独立评审` |
+| Trigger | Pull request opened / Pull request pushed |
+| Repository | `suyunhuan/Physical-AI` |
+| Tools | Comment on pull request；Memories |
+| Model | Claude Opus 最新高推理档 |
+| Enabled | **先 Off** → Run/验证后建议 Enable |
+
+**Prompt：**
+```
+每个 PR 触发只读评审：检查方案是否绑定 RSI 两条主线之一、评测口径是否固定、长程任务是否同时报告端到端完成率与 subgoal 成功率、是否存在选择性报告。
+使用 verifier subagent 独立运行可行的测试/静态检查，将阻塞问题以内联评论发到 PR。
+不修改代码、不自动批准；没有证据的问题标注为风险而非确定缺陷。
+```
+
+---
+
+### 4.5 RSI-自迭代调度
+| 字段 | 值 |
+|---|---|
+| Name | `RSI-自迭代调度` |
+| Trigger | Scheduled · cron `0 18 * * 5` |
+| Repository | `suyunhuan/Physical-AI` |
+| Tools | Memories；可选 MCP；允许创建 PR |
+| Model | Claude Opus 最新高推理档；轻量步骤可用 Auto/Composer |
+| Enabled | **先 Off** → 验证后建议 Enable |
+
+**Prompt：**
+```
+读取 rsi/experiments/experiment-tree.md、rsi/reports 与 rsi/plans，生成本周 RSI 复盘：
+有效改动、失败假设、指标变化、下一轮预算建议。只允许提出最多 3 个下一步候选，按预期收益/成本/风险排序。
+若候选可自动验证，创建独立分支执行最小实验；否则只输出 rsi/experiments/YYYY-MM-DD-rsi-report.md 并等待人工批准。
+预算用尽即停；禁止无预算限制地持续改代码。
+```
+
+---
+
+### 创建后建议 Enable 顺序
+1. 每条先 **手动 Run 一次**（确认只动 `rsi/`、去重读 paper-log）。  
+2. 通过后 Enable：**关键词雷达、每日论文日报、PR 独立评审、自迭代调度**。  
+3. **单点 Idea 闭环** 可保持 Manual（需要时再 Run）；勿在未设预算时对它开自动大规模训练。
+
+## 5. 阻塞项
+
+| 阻塞 | 需要 |
+|---|---|
+| Agent VM 浏览器无 cursor.com 会话 | [Try Live](bc-088004b6-f8ec-5860-a27e-d489b3dea0f0#desktop) 登录，或用户本机按 §4 粘贴 |
+| 无 Automations 写 API | 只能 UI 创建 |
+| 创建后的手动 Run / Enable | 用户或登录后的 Agent |
+
+## 6. 验收对照
 
 | 项 | 状态 |
 |---|---|
-| `rsi-core.mdc` 落盘 | 已落盘；Always Apply **待界面确认** |
-| 8 commands | 已落盘；`/` 菜单 **未测试** |
-| 3 subagents | 已落盘；解析 **未测试** |
-| 5 automation prompts | 已落盘；控制台 **待界面操作** |
-| `keywords` / `paper-log` / 5 子目录 | 已落盘（experiments 含 experiment-tree；其余 `.gitkeep`） |
-| 本地 `/paper-daily` / `/keyword-radar` | **未测试**（安装阶段跳过） |
-| Automation 手动 Run | **未测试** |
-| `rsi/model-selection.md` | 已落盘 |
-| Max Mode 本地 off；云端无开关 | 文档已写明；UI **待确认** |
-| worktree 隔离验证 | **未测试** |
-| Automations 保持禁用 | Prompt 已标注禁用；控制台创建后仍须用户保持禁用直至确认 |
-
-## 7. 后续建议（非本安装范围）
-
-1. 合并本 PR 后，在本地 Cursor 打开 `Physical-AI`，完成 §2 界面项。
-2. 用户确认后，按 §4 创建 5 条 Automation（仍禁用）→ 各手动 Run 一次 → 再考虑启用 3 条定时。
-3. 首次业务运行建议：`/keyword-radar` → `/paper-daily`（仍不下载权重、不开训）。
+| RSI 文件在 `main` | 已完成 |
+| 5 Automation 控制台对象 | **未创建** |
+| Enabled | **无** |
+| 选模文档 | `rsi/model-selection.md` 已有 |
