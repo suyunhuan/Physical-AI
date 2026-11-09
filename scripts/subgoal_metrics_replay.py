@@ -11,6 +11,8 @@ Usage:
     uv run python scripts/subgoal_metrics_replay.py --out-path /tmp/replay.json
 """
 
+from __future__ import annotations  # Keeps the harness runnable on the Python 3.8 eval containers.
+
 import dataclasses
 import json
 import pathlib
@@ -49,18 +51,27 @@ EPISODES = (
     },
 )
 
-# Hand-derived from the traces above; any change to the metric definitions must break here.
-#   end-to-end:      1 of 2 episodes report done                      -> 0.5
+# One further episode could not be instrumented at all, which is how a failed goal readout is
+# accounted for: it stays in the end-to-end denominator and pulls instrumentation coverage down.
+UNINSTRUMENTED_EPISODES = 1
+UNINSTRUMENTED_SUCCESSES = 0
+UNINSTRUMENTED_REASONS = ("scripted-task-2/episode-0: ValueError: goal state is empty",)
+
+# Hand-derived from the data above; any change to the metric definitions must break here. The
+# subgoal rows cover the two instrumented episodes only, which is what coverage 2/3 states.
+#   end-to-end:      1 of 3 attempted episodes report done            -> 1/3
 #   subgoal micro:   (3 of 3) + (1 of 2) atoms ever achieved          -> 4/5
 #   subgoal macro:   mean(3/3, 1/2)                                   -> 0.75
 #   progress AUC:    mean(mean(0,1/3,2/3,1/3,1), mean(0,1/2,1/2))     -> 0.4
 #   regressed atoms: atom 0 of episode A only, out of 5 atoms         -> 0.2
-#   episodes with a regression: 1 of 2                                -> 0.5
+#   episodes with a regression: 1 of 2 instrumented                   -> 0.5
+#   mean first achievement: mean(1,2,4,1) over the 4 achieved atoms   -> 2.0
 EXPECTED_AGGREGATE = {
-    "num_episodes": 2,
+    "num_episodes": 3,
     "num_instrumented_episodes": 2,
-    "instrumentation_coverage": 1.0,
-    "end_to_end_success_rate": 0.5,
+    "num_uninstrumented_episodes": 1,
+    "instrumentation_coverage": 2 / 3,
+    "end_to_end_success_rate": 1 / 3,
     "subgoal_success_rate_micro": 0.8,
     "subgoal_success_rate_macro": 0.75,
     "progress_auc_macro": 0.4,
@@ -69,8 +80,10 @@ EXPECTED_AGGREGATE = {
     "regressed_atom_rate": 0.2,
     "episode_regression_rate": 0.5,
     "regression_transitions_total": 1,
+    "mean_first_achieved_step_over_achieved": 2.0,
     "achieved_atom_coverage": 0.8,
     "done_atom_mismatch_episodes": 0,
+    "abnormally_terminated_episodes": 0,
 }
 EXPECTED_FIRST_ACHIEVED_STEPS = {
     "scripted-task-0/episode-0": [1, 2, 4],
@@ -117,6 +130,17 @@ def _check(aggregate: subgoal_metrics.AggregateSubgoalMetrics, episodes: list) -
         if value is None or abs(value - expected) > TOLERANCE:
             failures.append(f"{key}: expected {expected}, got {value}")
 
+    # Every numeric aggregate field must be pinned, so a newly added metric cannot slip in
+    # unverified.
+    unpinned = sorted(set(actual) - set(EXPECTED_AGGREGATE) - {"uninstrumented_reasons"})
+    if unpinned:
+        failures.append(f"aggregate fields without an expected value: {unpinned}")
+    if aggregate.uninstrumented_reasons != UNINSTRUMENTED_REASONS:
+        failures.append(
+            f"uninstrumented_reasons: expected {list(UNINSTRUMENTED_REASONS)}, "
+            f"got {list(aggregate.uninstrumented_reasons)}"
+        )
+
     for episode in episodes:
         expected_steps = EXPECTED_FIRST_ACHIEVED_STEPS[episode.episode_id]
         if list(episode.first_achieved_step) != expected_steps:
@@ -129,7 +153,12 @@ def _check(aggregate: subgoal_metrics.AggregateSubgoalMetrics, episodes: list) -
 
 def main(args: Args) -> None:
     episodes = _replay()
-    aggregate = subgoal_metrics.aggregate_episode_metrics(episodes)
+    aggregate = subgoal_metrics.aggregate_episode_metrics(
+        episodes,
+        num_uninstrumented_episodes=UNINSTRUMENTED_EPISODES,
+        uninstrumented_end_to_end_successes=UNINSTRUMENTED_SUCCESSES,
+        uninstrumented_reasons=UNINSTRUMENTED_REASONS,
+    )
     report = {
         "scenario": SCENARIO_NAME,
         "note": "Replay of scripted atom traces. Verifies the evaluator only, not any policy.",
@@ -146,7 +175,10 @@ def main(args: Args) -> None:
     failures = _check(aggregate, episodes)
     if failures:
         raise SystemExit("Subgoal metric replay mismatched the fixed protocol:\n  " + "\n  ".join(failures))
-    print(f"\nReplay matched the fixed protocol ({SCENARIO_NAME}): {len(EXPECTED_AGGREGATE)} aggregate fields checked.")
+    print(
+        f"\nReplay matched the fixed protocol ({SCENARIO_NAME}): {len(EXPECTED_AGGREGATE)} numeric aggregate "
+        "fields plus uninstrumented reasons and per-episode first-achievement steps checked."
+    )
 
 
 if __name__ == "__main__":
