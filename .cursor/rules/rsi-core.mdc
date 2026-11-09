@@ -1,5 +1,5 @@
 ---
-description: RSI 研发工作流核心约束（具身长程家庭任务 / 多技术路线雷达 / openpi 仅作实验基座 / 去重与评测口径）
+description: RSI 研发工作流核心约束（具身长程家庭任务 / 榜单冲顶 / 数据×形态联合 / 轮式双臂仿真 / openpi 基座）
 globs: ["**/*"]
 alwaysApply: true
 ---
@@ -13,9 +13,16 @@ MPC、mobile manipulation、open-vocabulary manipulation、dexterous manipulatio
 long-horizon planning、data engine、demonstration / LeRobot 数据、RL fine-tuning、sim2real、closed-loop evaluation、
 test-time scaling、self-improvement、3D scene graph、affordance、cross-embodiment、failure recovery。
 
+# 榜单冲顶目标（RSI 新增阶段）
+- 北极星：在公开具身榜单上冲击 **#1**；主榜为 **BEHAVIOR-1K / BEHAVIOR Challenge（B1K）**，卫星榜含 RoboCasa 等；LIBERO 仅作 openpi 回归闸门，**禁止**用桌面 suite 分数冒充家庭主榜进展。
+- 主指标：B1K **Q-score**（或 BDDL 部分学分）+ **全任务成功率**；同时保留端到端与 subgoal 双口径。
+- **数据优化与形态选择必须联合搜索**，二者同为一等杠杆；禁止先锁死单一形态再凑数据，或只堆数据不审形态。
+- 闭环仿真默认场景：**轮式底盘 + 双臂** 的家庭长程任务（收纳/清洁/厨房辅助/跨房间取送等）。
+
 # 短期业务验证主线（强相关论文与 idea 的筛选基准）
 1. 长程任务的子目标分解、规划与执行监控（hierarchical planning / TAMP / subgoal / skill chaining / world model planning / failure recovery）
 2. 家庭场景的数据效率、泛化与可靠评测（少样本学习、跨物体跨任务跨场景泛化、sim2real、open-vocab、合成数据、闭环评测）
+3. 榜单冲顶与数据×形态联合（B1K/Q-score、示范数据配方、跨形态重定向、轮式双臂控制接口）
 
 # 代码基座（开源，仅供方案设计与验证环节结合；论文检索环节不涉及）
 - openpi（https://github.com/Physical-Intelligence/openpi，本仓库镜像于 suyunhuan/Physical-AI）：
@@ -23,17 +30,19 @@ test-time scaling、self-improvement、3D scene graph、affordance、cross-embod
   - 训练 / 微调：训练脚本与配置（典型位置 scripts/、src/openpi/training）
   - 数据管线：LeRobot 数据集服务与自定义数据转换（典型位置 scripts/serve_datasets*、数据转换脚本）
   - 推理与评测：inference examples、LIBERO 等仿真评测接入
+- 冲顶评测入口可为 B1K/OmniGibson 等外部栈；不能直接落到 openpi 的高价值路线保留为外部基线，禁止因实现栈限制忽略。
 
 # 硬规则
 1. 论文相关任务必须先读 rsi/paper-log.md 去重，推送后立即登记；同一工作只推一次，跨天更新注明"更新版"。
 2. 论文相关任务必须先读 rsi/keywords.md，按最新关键词与业务方向筛选。
 3. 每日推送口径：3 篇前沿 Top + 1-2 篇短期强相关（共 4-5 篇）。
-4. idea 卡片字段固定：标题/机构/发布日期 · 技术路线（R1-R8）· 一句话问题 · 核心方法（100 字内）· 与家庭长程任务的可迁移点 ·
+4. idea 卡片字段固定：标题/机构/发布日期 · 技术路线（R1-R8 或 R9 榜单/数据形态）· 一句话问题 · 核心方法（100 字内）· 与家庭长程任务的可迁移点 ·
    可迁移 idea（标注：可直接落地 / 需改造 / 仅参考）· 证据强度（实验设置、数据集规模、是否开源、基线）· 不确定性。
    研读卡片不要求代码仓映射；与 openpi 或外部组件的兼容性只在 C3/C4 分析，不参与 C1/C2 的检索和筛选。
 5. 不编造论文与代码结论；读不到的细节标注"未核实"；每张卡片核心内容 ≤300 字。
-6. 所有实验必须使用固定评测口径（如 LIBERO 固定 suite、真实机固定任务集与成功判定），
+6. 所有实验必须使用固定评测口径（B1K 官方指标优先；否则声明卫星榜或 LIBERO 回归套件），
    劣化如实记录；好则保留、差则回退，禁止调参凑数、禁止选择性报告指标。
-7. 方案必须先判断技术路线（VLA、分层规划/TAMP、世界模型/MPC、RL/自改进、数据仿真、感知记忆、基础模型、安全评测），再评估能否落到 openpi 真实文件 / 函数 / 配置 / 数据字段级别；不能直接落到 openpi 的高价值路线也要保留为“外部基线 / 后续架构候选”，禁止因实现栈限制而忽略。
-8. 涉及长程任务时，同时报告端到端任务完成率与子目标（subgoal）级成功率，避免只报单步指标。
-9. 每日雷达逐项检查 R1-R8；研读按最近 7 次运行滚动统计路线覆盖，优先补检覆盖不足的方向。若候选全部是 VLA，主动补检非 VLA 工作；没有合格结果则如实披露，不强凑篇数或路线配额。路线可交叉归类，也可新增 R9+，八类种子不是封闭清单。
+7. 方案必须先判断技术路线，再评估能否落到 openpi 或 B1K/外部仿真真实文件 / 函数 / 配置 / 数据字段级别；不能直接落地的高价值路线保留为“外部基线 / 后续架构候选”。
+8. 涉及长程任务时，同时报告端到端任务完成率与子目标（subgoal）级成功率（B1K 场景优先 Q-score），避免只报单步指标。
+9. 每日雷达逐项检查 R1-R8 与榜单相关 R9；研读按最近 7 次运行滚动统计路线覆盖，优先补检覆盖不足的方向。若候选全部是 VLA，主动补检非 VLA 工作；没有合格结果则如实披露，不强凑篇数或路线配额。
+10. 数据×形态假设必须写成四元组 H=(任务切片, 形态配置, 数据配方, 评测口径) 再进入 C3/C6/仿真闭环；默认不下载权重、不开 GPU 训练、不部署真机，除非用户在当次输入中明确授权。

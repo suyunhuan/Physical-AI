@@ -1,5 +1,5 @@
 # RSI 安装报告 · Physical-AI
-# 日期：2026-11-09（更新：套餐已解锁；控制台创建仍缺浏览器登录会话）
+# 日期：2026-11-09（更新：榜单冲顶阶段已落盘草稿）
 # 仓库：https://github.com/suyunhuan/Physical-AI
 
 ## 0. 合并与部署进度
@@ -7,9 +7,14 @@
 | 项 | 结果 |
 |---|---|
 | PR #1 openpi+RSI 树 | **已合并** `main`（`2a0b81c`） |
-| 用户套餐 / Cloud Agents | **用户确认已解锁** |
-| 控制台 5 Automations | **尚未创建**（Agent 浏览器停在 `authenticator.cursor.sh`，无会话） |
+| 用户套餐 / Cloud Agents | **用户确认已解锁**；既有 5 条 Automation 已由用户创建并启用（见 smoke 报告） |
+| **榜单冲顶阶段（2026-11-09）** | 仓库草稿已落盘：`rsi/leaderboard.md`、`rsi/leaderboards/`、3 条新 Automation 草稿、5 条 Prompt 增量、`rsi-core` 硬规则；**控制台 NEW/UPDATED 粘贴待用户操作** |
 | 权重 / 训练 / 真机 | **未执行** |
+
+### 0.1 榜单阶段入口
+- 设计（Project store）：`leaderboard-rsi-design.md`
+- 粘贴包（Project store）：`leaderboard-automation-paste-packs.md`
+- 仓库说明：`rsi/leaderboard.md`
 
 ## 1. 已落盘（`main`）
 

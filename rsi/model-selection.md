@@ -44,9 +44,12 @@
 | RSI-每日论文日报 | `0 7 * * *` | Gemini Pro 长上下文 | 同上 | **待界面操作** |
 | RSI-单点Idea闭环 | Manual / Webhook | Claude Opus 高推理 | UI 选 Opus 最新高档 | **待界面操作** |
 | RSI-PR独立评审 | PR opened/pushed | Claude Opus 高推理 | 同上 | **待界面操作** |
-| RSI-自迭代调度 | `0 18 * * 5` | Opus；轻量步骤 Auto | Opus + 轻步骤 Auto/Composer | **待界面操作** |
+| RSI-自迭代调度 | `0 18 * * 5` | Opus；轻量步骤 Auto | Opus 5 **High** + 轻步骤 Auto/Composer | 已启用则改为 High |
+| **RSI-榜单雷达**（新） | `0 5 * * *` | Gemini Pro 长上下文 | `gemini-4-argon-high` | **待粘贴创建**（先 Disabled） |
+| **RSI-数据形态联合搜索**（新） | `0 16 * * 3` | Gemini Pro（重权衡可 Opus High） | Gemini high / Opus high | **待粘贴创建** |
+| **RSI-轮式双臂仿真闭环**（新） | Manual / Webhook | Claude Opus 5 High | `claude-opus-5-5-high` / thinking-high | **待粘贴创建** |
 
-Cloud Automations **没有**本地 Max Mode 开关；控费靠：选模档位、Repository 限定为 `suyunhuan/Physical-AI`、Prompt 只读 `rsi/` 与必要代码、设置运行预算。首次全部保持**禁用**，手动 Run 验证后再考虑启用定时。
+Cloud Automations **没有**本地 Max Mode 开关；控费靠：选模档位、Repository 限定为 `suyunhuan/Physical-AI`、Prompt 只读 `rsi/` 与必要代码、设置运行预算。新 Automation 先 **Disabled**，手动 Run 验证后再启用定时。
 
 ## 4. Max Mode
 
