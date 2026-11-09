@@ -140,7 +140,7 @@ def eval_libero(args: Args) -> None:
             replay_images = []
 
             episode_id = f"{args.task_suite_name}/task-{task_id}/episode-{episode_idx}"
-            monitor, tracker, instrumentation_error = None, None, None
+            monitor, tracker, instrumentation_error, termination_reason = None, None, None, None
             if args.report_subgoal_metrics:
                 try:
                     monitor = libero_subgoal.LiberoGoalMonitor(env)
@@ -224,6 +224,7 @@ def eval_libero(args: Args) -> None:
 
                 except Exception as e:
                     logging.error(f"Caught exception: {e}")
+                    termination_reason = f"{type(e).__name__}: {e}"
                     break
 
             task_episodes += 1
@@ -231,7 +232,7 @@ def eval_libero(args: Args) -> None:
 
             if args.report_subgoal_metrics:
                 if tracker is not None and tracker.num_sampled_steps > 0:
-                    metrics = tracker.finalize(end_to_end_success=bool(done))
+                    metrics = tracker.finalize(end_to_end_success=bool(done), termination_reason=termination_reason)
                     episode_subgoal_metrics.append(metrics)
                     with episodes_jsonl_path.open("a") as f:
                         f.write(json.dumps(metrics.to_dict(), sort_keys=True) + "\n")
@@ -314,6 +315,11 @@ def _report_subgoal_summary(
         logging.error(
             f"{aggregate.done_atom_mismatch_episodes} episodes disagreed with the environment success bit; "
             "the atom readout is unreliable for this run."
+        )
+    if aggregate.abnormally_terminated_episodes:
+        logging.error(
+            f"{aggregate.abnormally_terminated_episodes} episodes were cut short by an infrastructure "
+            "failure; their progress traces are included and drag the subgoal numbers down."
         )
 
 

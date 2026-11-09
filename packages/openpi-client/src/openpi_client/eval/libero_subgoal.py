@@ -1,10 +1,11 @@
 """Adapter that exposes LIBERO BDDL goal atoms as a subgoal readout.
 
 LIBERO defines task success as the conjunction of the predicates in the BDDL goal:
-``bddl_base_domain.py`` sets ``done = self._check_success()`` and ``_check_success`` ANDs
-``_eval_predicate(state)`` over ``parsed_problem["goal_state"]``. Reading the same
-predicates individually therefore yields a per-atom progress trace that is consistent with
-the environment's own success bit by construction.
+``bddl_base_domain.py:807`` sets ``done = self._check_success()``, and each problem subclass
+(e.g. ``libero_tabletop_manipulation.py:135-143``) implements ``_check_success`` by ANDing
+``_eval_predicate(state)`` over ``parsed_problem["goal_state"]``. Reading the same predicates
+individually therefore yields a per-atom progress trace that is consistent with the
+environment's own success bit by construction.
 
 Those entry points (``env.env``, ``parsed_problem``, ``_eval_predicate``) are LIBERO
 internals rather than a supported API, and the predicate tuple layout comes from the

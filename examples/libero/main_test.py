@@ -209,6 +209,27 @@ def test_unreadable_goal_state_is_reported_as_uninstrumented_not_as_failure(patc
     assert len(summary["uninstrumented_reasons"]) == 1
 
 
+def test_episode_cut_short_by_an_infrastructure_failure_is_marked(patched_main, tmp_path, monkeypatch):
+    class _BrokenClient(_FakePolicyClient):
+        def infer(self, _element):
+            raise RuntimeError("policy server gone")
+
+    monkeypatch.setattr(main._websocket_client_policy, "WebsocketClientPolicy", _BrokenClient)  # noqa: SLF001
+
+    patched_main.eval_libero(_args(tmp_path, report_subgoal_metrics=True))
+
+    episodes = [
+        json.loads(line) for line in (tmp_path / "subgoal" / "libero_spatial_episodes.jsonl").read_text().splitlines()
+    ]
+    assert episodes[0]["termination_reason"] == "RuntimeError: policy server gone"
+    # The baseline readout happened, so the episode is instrumented, but its stalled progress
+    # must not be read as a policy failure.
+    assert episodes[0]["num_sampled_steps"] == 1
+    summary = json.loads((tmp_path / "subgoal" / "libero_spatial_summary.json").read_text())["aggregate"]
+    assert summary["abnormally_terminated_episodes"] == 1
+    assert summary["end_to_end_success_rate"] == 0.0
+
+
 def test_predicate_readout_failure_does_not_abort_the_rollout(patched_main, tmp_path, monkeypatch):
     def broken_evaluator(_env, _predicate):
         raise RuntimeError("predicate backend unavailable")

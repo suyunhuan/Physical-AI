@@ -72,6 +72,10 @@ class EpisodeSubgoalMetrics:
     num_atoms: int
     num_sampled_steps: int
     end_to_end_success: bool
+    # Set when the rollout ended on an infrastructure failure (policy server down, inference
+    # timeout) rather than on the task outcome. Such an episode stalls for reasons that have
+    # nothing to do with the policy, so its progress trace must carry that marker.
+    termination_reason: Optional[str]
     # Atom i is "ever achieved" if it held at any sampled step, including the baseline.
     ever_achieved: Tuple[bool, ...]
     first_achieved_step: Tuple[Optional[int], ...]
@@ -102,6 +106,7 @@ class EpisodeSubgoalMetrics:
             "num_atoms": self.num_atoms,
             "num_sampled_steps": self.num_sampled_steps,
             "end_to_end_success": self.end_to_end_success,
+            "termination_reason": self.termination_reason,
             "ever_achieved": list(self.ever_achieved),
             "first_achieved_step": list(self.first_achieved_step),
             "final_progress": self.final_progress,
@@ -145,7 +150,7 @@ class EpisodeSubgoalTracker:
                 )
         self._trace.append(tuple(bool(status) for status in statuses))
 
-    def finalize(self, end_to_end_success: bool) -> EpisodeSubgoalMetrics:
+    def finalize(self, end_to_end_success: bool, termination_reason: Optional[str] = None) -> EpisodeSubgoalMetrics:
         if not self._trace:
             raise ValueError("Cannot finalize an episode without any recorded atom readout.")
 
@@ -175,6 +180,7 @@ class EpisodeSubgoalTracker:
             num_atoms=num_atoms,
             num_sampled_steps=len(self._trace),
             end_to_end_success=bool(end_to_end_success),
+            termination_reason=termination_reason,
             ever_achieved=tuple(ever_achieved),
             first_achieved_step=tuple(first_achieved_step),
             final_progress=progress[-1],
@@ -218,6 +224,9 @@ class AggregateSubgoalMetrics:
     mean_first_achieved_step_over_achieved: Optional[float]
     achieved_atom_coverage: Optional[float]
     done_atom_mismatch_episodes: int
+    # Instrumented episodes cut short by an infrastructure failure. Their progress traces are
+    # included, so a non-zero count means part of the subgoal numbers reflects aborted rollouts.
+    abnormally_terminated_episodes: int
     uninstrumented_reasons: Tuple[str, ...]
 
     def to_dict(self) -> Dict[str, Any]:
@@ -275,5 +284,6 @@ def aggregate_episode_metrics(
         mean_first_achieved_step_over_achieved=_mean(first_achieved_steps),
         achieved_atom_coverage=(len(first_achieved_steps) / total_atoms if total_atoms else None),
         done_atom_mismatch_episodes=sum(1 for episode in episodes if episode.done_atom_mismatch),
+        abnormally_terminated_episodes=sum(1 for episode in episodes if episode.termination_reason),
         uninstrumented_reasons=tuple(uninstrumented_reasons),
     )

@@ -111,6 +111,18 @@ def test_done_atom_mismatch_flags_disagreement_with_environment():
     assert metrics.done_atom_mismatch is True
 
 
+def test_termination_reason_is_carried_and_counted():
+    tracker = subgoal_metrics.EpisodeSubgoalTracker(_atoms(1), episode_id="e")
+    tracker.record([False])
+    metrics = tracker.finalize(end_to_end_success=False, termination_reason="RuntimeError: server gone")
+
+    assert metrics.termination_reason == "RuntimeError: server gone"
+
+    aggregate = subgoal_metrics.aggregate_episode_metrics([metrics, _episode("f", [[False]], False)])
+
+    assert aggregate.abnormally_terminated_episodes == 1
+
+
 def test_aggregate_reports_macro_and_micro_separately():
     episodes = [
         _episode("a", [[False] * 3, [True, False, False], [True, True, False]], end_to_end_success=False),
