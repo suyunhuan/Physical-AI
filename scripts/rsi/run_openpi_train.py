@@ -78,8 +78,10 @@ def main() -> int:
 
     if not env.cuda_visible and not allow_cpu:
         print(
-            "ERROR: No CUDA GPU detected. Refusing openpi train.\n"
-            "  - On Mac Mini: use `python scripts/rsi/run_local_pipeline.py --mode cpu-stub`\n"
+            "ERROR: No CUDA GPU detected. Refusing openpi π0 train.\n"
+            "  - On Apple Silicon Mac: use `python scripts/rsi/run_local_pipeline.py --mode mac`\n"
+            "    (MLX/MPS checklist path — protocol parity only; not full π0)\n"
+            "  - Or CPU stub: `python scripts/rsi/run_local_pipeline.py --mode cpu-stub`\n"
             "  - On Linux+CUDA: ensure nvidia drivers + JAX CUDA are installed\n"
             "  - Override (not recommended): ALLOW_CPU_JAX=1 or --allow-cpu",
             file=sys.stderr,

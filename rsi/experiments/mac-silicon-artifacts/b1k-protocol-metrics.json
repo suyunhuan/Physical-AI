@@ -1,0 +1,31 @@
+{
+  "protocol": "b1k_aligned_wheeled_bimanual_qscore",
+  "official_b1k": {
+    "available": false,
+    "root": null,
+    "detail": "B1K/OmniGibson not installed. Install per https://behavior.stanford.edu/challenge/ and export B1K_ROOT=/path/to/behavior. Meanwhile use protocol dry-run (wheeled dual-arm suite + Q-score).",
+    "official_eval_cmd": []
+  },
+  "env_recommended_mode": "mac",
+  "suite": [
+    "wb_kitchen_cup_to_sink",
+    "wb_open_drawer_stow_bowl",
+    "wb_table_clear_two_items",
+    "wb_fridge_fetch_bottle",
+    "wb_wipe_spill_then_bin",
+    "wb_dual_handover_pot",
+    "wb_laundry_basket_transfer",
+    "wb_multi_room_deliver_mug"
+  ],
+  "baseline": {
+    "n": 16,
+    "mean_q_score": 0.2,
+    "e2e_success_rate": 0.0
+  },
+  "checklist_gated": {
+    "n": 16,
+    "mean_q_score": 0.475,
+    "e2e_success_rate": 0.3125
+  },
+  "note": "These are protocol metrics, NOT official BEHAVIOR leaderboard numbers."
+}

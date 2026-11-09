@@ -13,15 +13,19 @@ python3 scripts/rsi/run_local_pipeline.py --mode dry-run
 
 | 平台 | 推荐 mode |
 |---|---|
-| macOS (Apple Silicon / Intel) | `cpu-stub` / `all-safe` / `b1k-protocol` |
+| macOS Apple Silicon | `mac`（MLX/MPS）/ `all-safe` / `b1k-protocol` |
+| macOS Intel | `cpu-stub` / `all-safe` / `b1k-protocol` |
 | Linux + CUDA GPU | `openpi-gpu` + 日后 `b1k-official` |
-| 本 Cloud VM（无 GPU） | 同 Mac：仅 stub / protocol |
+| 本 Cloud VM（无 GPU） | `cpu-stub` / protocol |
+
+Apple Silicon 专用 runbook：`rsi/docs/mac-silicon-ops.md`。
 
 ## 1. Mac Mini 能做什么 / 不能做什么
 
 **可以**
-- `detect_env` / `dry-run`
-- 第一版 idea CPU 闭环：`run_first_idea_loop.py`（checklist + 门控恢复）
+- `detect_env` / `dry-run`（含 MLX/MPS/内存）
+- **`--mode mac`**：checklist 头用 MLX（优先）或 PyTorch MPS 短训 + 协议评测
+- 第一版 idea CPU 闭环：`run_first_idea_loop.py`
 - B1K **协议**评测（轮式双臂固定套件 + Q-score，非官方榜）
 
 **不可以（官方 openpi 路径）**

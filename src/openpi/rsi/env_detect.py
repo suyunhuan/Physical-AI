@@ -10,23 +10,34 @@ import subprocess
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from openpi.rsi.mac_backend import detect_mac_backend
+
 
 @dataclass
 class EnvReport:
     system: str
     machine: str
     python: str
+    apple_silicon: bool
+    memory_gb: float | None
     has_nvidia_smi: bool
     cuda_visible: bool
     gpu_names: list[str]
     jax_devices: list[str]
     jax_error: str | None
+    mlx_available: bool
+    mps_available: bool
+    metal_available: bool
+    jax_metal_available: bool
+    mac_backend: str
     disk_free_gb: float
     openpi_cache: str
     b1k_root: str | None
     b1k_importable: bool
     download_weights_env: bool
     recommended_mode: str
+    openpi_pi0_on_mac: bool
+    gaps_vs_cuda: list[str]
     messages: list[str]
 
 
@@ -81,18 +92,27 @@ def detect_env(repo_root: Path | None = None) -> EnvReport:
     cuda_visible = any("gpu" in d.lower() or "cuda" in d.lower() for d in jax_devs) or (
         has_smi and bool(gpu_names) and not gpu_names[0].startswith("<nvidia-smi error")
     )
+    # On Darwin, JAX "gpu" may be Metal — do not treat as CUDA.
+    if platform.system() == "Darwin":
+        cuda_visible = False
     b1k_root, b1k_ok = _b1k_status()
     cache = Path(os.environ.get("OPENPI_DATA_HOME", "~/.cache/openpi")).expanduser()
     download = os.environ.get("DOWNLOAD_WEIGHTS", "0") in {"1", "true", "TRUE", "yes", "YES"}
     messages: list[str] = []
     system = platform.system()
+    mac = detect_mac_backend()
 
     if system == "Darwin":
+        messages.extend(mac.messages)
         messages.append(
-            "检测到 macOS：openpi 官方训练/评测面向 Linux + NVIDIA CUDA；"
-            "本机请用 --mode cpu-stub / dry-run。完整 π0 训练请到 CUDA Linux。"
+            "官方 openpi π0 JAX+CUDA 训练不可在 Mac 运行；"
+            "请用 --mode mac（MLX/MPS checklist）或 cpu-stub / b1k-protocol。"
+            "完整 π0 仍需 Linux+CUDA。"
         )
-        recommended = "cpu-stub"
+        if mac.preferred in {"mlx", "mps"}:
+            recommended = "mac"
+        else:
+            recommended = "cpu-stub"
     elif not cuda_visible:
         messages.append("未检测到可用 CUDA GPU。拒绝启动真实 openpi 训练（除非 ALLOW_CPU_JAX=1，仍极慢且不推荐）。")
         recommended = "cpu-stub"
@@ -114,17 +134,26 @@ def detect_env(repo_root: Path | None = None) -> EnvReport:
         system=system,
         machine=platform.machine(),
         python=platform.python_version(),
+        apple_silicon=mac.apple_silicon,
+        memory_gb=mac.memory_gb,
         has_nvidia_smi=has_smi,
         cuda_visible=cuda_visible,
         gpu_names=gpu_names,
         jax_devices=jax_devs,
         jax_error=jax_err,
+        mlx_available=mac.mlx_available,
+        mps_available=mac.mps_available,
+        metal_available=mac.metal_available,
+        jax_metal_available=mac.jax_metal_available,
+        mac_backend=mac.preferred,
         disk_free_gb=round(free_gb, 2),
         openpi_cache=str(cache),
         b1k_root=b1k_root,
         b1k_importable=b1k_ok,
         download_weights_env=download,
         recommended_mode=recommended,
+        openpi_pi0_on_mac=False,
+        gaps_vs_cuda=mac.gaps_vs_cuda if system == "Darwin" else [],
         messages=messages,
     )
 
