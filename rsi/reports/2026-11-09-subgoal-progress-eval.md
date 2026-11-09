@@ -183,6 +183,11 @@ verifier subagent 独立复核后提出的问题已全部处理：
 | 异常中断的 episode 被当作正常已插桩 episode 结算，拉低 subgoal 指标且无标记 | 已加 `termination_reason` / `abnormally_terminated_episodes`，并补集成测试 |
 | 报告「Python 3.8 导入与运行通过」措辞超出所贴命令的证据 | 已改为真正运行完整流程，并贴出命令 |
 | `_eval_predicate` 行号应为 `:145-162` | 已更正 |
+| 第二轮：未插桩分支会把真实异常原因丢掉，写成 `no atom readout` | 已改为 `instrumentation_error or termination_reason or ...` |
+| 第二轮：`_check()` 遇到非数值期望值会抛 `TypeError` 而不是给出干净的失败信息 | 已按类型分流比较 |
+| 第二轮：`abnormally_terminated_episodes` 用真值判断，空字符串会被当作未中断 | 已改为 `is not None` |
+
+第二轮复核结论：**PASS-WITH-CAVEATS，可标记 ready for review**。保留的 caveat 只有一条且与代码无关 —— verifier 的 Shell 不可用，运行时证据由本 agent 执行。verifier 独立手算核对了全部 17 个聚合字段、两个有争议的分母（`achieved_atom_coverage` 与 `episode_regression_rate` 都不应随未插桩 episode 变动，实现正确）、以及 `termination_reason` / `instrumentation_error` 的三条跨 episode 泄漏路径（均无泄漏）。
 
 verifier 本次运行的 Shell 工具被权限层封禁，因此它只完成了静态取证（文件、代码、口径公式手算、行号核实、LIBERO 源码核实、选择性报告审查），**运行时结论由本 agent 执行并在 §5.1 贴出**。这一点如实记录，不当作 verifier 已签字的运行时证据。
 

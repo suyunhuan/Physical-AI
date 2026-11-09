@@ -90,6 +90,9 @@ EXPECTED_FIRST_ACHIEVED_STEPS = {
     "scripted-task-1/episode-0": [1, None],
 }
 TOLERANCE = 1e-9
+# Named so the isinstance checks below stay Python 3.8 compatible: `int | float` would be
+# evaluated at call time and only parses on 3.10+.
+NUMERIC_TYPES = (int, float)
 
 
 @dataclasses.dataclass
@@ -127,7 +130,11 @@ def _check(aggregate: subgoal_metrics.AggregateSubgoalMetrics, episodes: list) -
     actual = aggregate.to_dict()
     for key, expected in EXPECTED_AGGREGATE.items():
         value = actual[key]
-        if value is None or abs(value - expected) > TOLERANCE:
+        if isinstance(value, NUMERIC_TYPES) and isinstance(expected, NUMERIC_TYPES):
+            matched = abs(value - expected) <= TOLERANCE
+        else:
+            matched = value == expected
+        if not matched:
             failures.append(f"{key}: expected {expected}, got {value}")
 
     # Every numeric aggregate field must be pinned, so a newly added metric cannot slip in

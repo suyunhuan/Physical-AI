@@ -284,6 +284,6 @@ def aggregate_episode_metrics(
         mean_first_achieved_step_over_achieved=_mean(first_achieved_steps),
         achieved_atom_coverage=(len(first_achieved_steps) / total_atoms if total_atoms else None),
         done_atom_mismatch_episodes=sum(1 for episode in episodes if episode.done_atom_mismatch),
-        abnormally_terminated_episodes=sum(1 for episode in episodes if episode.termination_reason),
+        abnormally_terminated_episodes=sum(1 for episode in episodes if episode.termination_reason is not None),
         uninstrumented_reasons=tuple(uninstrumented_reasons),
     )

@@ -247,7 +247,8 @@ def eval_libero(args: Args) -> None:
                     # quietly shrink the reported suite.
                     uninstrumented_episodes += 1
                     uninstrumented_successes += int(bool(done))
-                    uninstrumented_reasons.append(f"{episode_id}: {instrumentation_error or 'no atom readout'}")
+                    reason = instrumentation_error or termination_reason or "no atom readout"
+                    uninstrumented_reasons.append(f"{episode_id}: {reason}")
 
             # Save a replay video of the episode
             suffix = "success" if done else "failure"
