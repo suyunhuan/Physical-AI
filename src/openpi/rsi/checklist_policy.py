@@ -140,5 +140,113 @@ def train_logistic(
             p_all = 1.0 / (1.0 + np.exp(-(xs @ w)))
             loss = float(-np.mean(ys * np.log(p_all + 1e-8) + (1 - ys) * np.log(1 - p_all + 1e-8)))
             acc = float(((p_all > 0.5) == (ys > 0.5)).mean())
-            history.append({"step": step, "loss": loss, "acc": acc})
+            history.append({"step": step, "loss": loss, "acc": acc, "backend": "cpu"})
     return ChecklistPolicy(weights=w, name="trained_checklist"), history
+
+
+def train_logistic_mps(
+    xs: np.ndarray,
+    ys: np.ndarray,
+    *,
+    steps: int = 400,
+    lr: float = 0.2,
+    seed: int = 0,
+) -> tuple[ChecklistPolicy, list[dict]]:
+    """Same logistic objective on PyTorch MPS (Apple Silicon)."""
+    import torch
+
+    if not (torch.backends.mps.is_available() and torch.backends.mps.is_built()):
+        raise RuntimeError("PyTorch MPS is not available on this machine.")
+
+    device = torch.device("mps")
+    torch.manual_seed(seed)
+    rng = np.random.default_rng(seed)
+    x_all = torch.tensor(xs, dtype=torch.float32, device=device)
+    y_all = torch.tensor(ys, dtype=torch.float32, device=device)
+    w = torch.randn(xs.shape[1], dtype=torch.float32, device=device) * 0.05
+    history: list[dict] = []
+    n = len(ys)
+    for step in range(steps):
+        idx = rng.choice(n, size=min(64, n), replace=False)
+        xb = x_all[idx]
+        yb = y_all[idx]
+        logits = xb @ w
+        probs = torch.sigmoid(logits)
+        grad = xb.T @ (probs - yb) / len(yb)
+        w = w - lr * grad
+        if step % 20 == 0 or step == steps - 1:
+            with torch.no_grad():
+                p_all = torch.sigmoid(x_all @ w)
+                loss = float(
+                    (
+                        -(
+                            y_all * torch.log(p_all + 1e-8)
+                            + (1 - y_all) * torch.log(1 - p_all + 1e-8)
+                        ).mean()
+                    ).cpu()
+                )
+                acc = float((((p_all > 0.5) == (y_all > 0.5)).float().mean()).cpu())
+            history.append({"step": step, "loss": loss, "acc": acc, "backend": "mps"})
+    return ChecklistPolicy(weights=w.detach().cpu().numpy().astype(np.float64), name="trained_checklist_mps"), history
+
+
+def train_logistic_mlx(
+    xs: np.ndarray,
+    ys: np.ndarray,
+    *,
+    steps: int = 400,
+    lr: float = 0.2,
+    seed: int = 0,
+) -> tuple[ChecklistPolicy, list[dict]]:
+    """Same logistic objective on MLX Metal (preferred Apple Silicon backend)."""
+    import mlx.core as mx
+
+    rng = np.random.default_rng(seed)
+    # Deterministic-ish init matching CPU scale
+    w_np = rng.normal(0, 0.05, size=xs.shape[1]).astype(np.float32)
+    w = mx.array(w_np)
+    x_all = mx.array(xs.astype(np.float32))
+    y_all = mx.array(ys.astype(np.float32))
+    history: list[dict] = []
+    n = len(ys)
+    for step in range(steps):
+        idx = rng.choice(n, size=min(64, n), replace=False)
+        xb = x_all[idx.tolist()]
+        yb = y_all[idx.tolist()]
+        logits = xb @ w
+        probs = mx.sigmoid(logits)
+        grad = (xb.T @ (probs - yb)) / len(yb)
+        w = w - lr * grad
+        mx.eval(w)
+        if step % 20 == 0 or step == steps - 1:
+            p_all = mx.sigmoid(x_all @ w)
+            mx.eval(p_all)
+            p_np = np.array(p_all)
+            loss = float(-np.mean(ys * np.log(p_np + 1e-8) + (1 - ys) * np.log(1 - p_np + 1e-8)))
+            acc = float(((p_np > 0.5) == (ys > 0.5)).mean())
+            history.append({"step": step, "loss": loss, "acc": acc, "backend": "mlx"})
+    w_out = np.array(w, dtype=np.float64)
+    return ChecklistPolicy(weights=w_out, name="trained_checklist_mlx"), history
+
+
+def train_logistic_auto(
+    xs: np.ndarray,
+    ys: np.ndarray,
+    *,
+    backend: str = "auto",
+    steps: int = 400,
+    lr: float = 0.2,
+    seed: int = 0,
+) -> tuple[ChecklistPolicy, list[dict], str]:
+    """Dispatch to mlx / mps / cpu. Returns (policy, history, backend_used)."""
+    from openpi.rsi.mac_backend import resolve_backend
+
+    chosen = resolve_backend(backend)
+    if chosen == "mlx":
+        pol, hist = train_logistic_mlx(xs, ys, steps=steps, lr=lr, seed=seed)
+        return pol, hist, "mlx"
+    if chosen == "mps":
+        pol, hist = train_logistic_mps(xs, ys, steps=steps, lr=lr, seed=seed)
+        return pol, hist, "mps"
+    pol, hist = train_logistic(xs, ys, steps=steps, lr=lr, seed=seed)
+    return pol, hist, "cpu"

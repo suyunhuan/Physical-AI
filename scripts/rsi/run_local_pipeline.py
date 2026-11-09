@@ -2,12 +2,13 @@
 """One-entry local pipeline for Mac / CUDA Linux.
 
 Modes:
-  dry-run     detect env + print commands only
-  cpu-stub    first-idea CPU checklist loop (works on Mac Mini)
-  openpi-gpu  real openpi train (CUDA Linux + DOWNLOAD_WEIGHTS)
+  dry-run       detect env + print commands only
+  cpu-stub      first-idea CPU checklist loop (works on Mac Mini)
+  mac           Apple Silicon MLX/MPS checklist train+eval (preferred on M-series)
+  openpi-gpu    real openpi train (CUDA Linux + DOWNLOAD_WEIGHTS)
   b1k-protocol  B1K-aligned protocol eval (CPU)
   b1k-official  real B1K if installed
-  all-safe    dry-run + cpu-stub + b1k-protocol (default for Mac)
+  all-safe      dry-run + mac-or-cpu-stub + b1k-protocol (default for Mac)
 """
 
 from __future__ import annotations
@@ -33,7 +34,7 @@ def main() -> int:
     ap.add_argument(
         "--mode",
         default="all-safe",
-        choices=["dry-run", "cpu-stub", "openpi-gpu", "b1k-protocol", "b1k-official", "all-safe"],
+        choices=["dry-run", "cpu-stub", "mac", "openpi-gpu", "b1k-protocol", "b1k-official", "all-safe"],
     )
     args = ap.parse_args()
     py = sys.executable
@@ -42,13 +43,46 @@ def main() -> int:
 
     if args.mode == "dry-run":
         print("\nSuggested next commands:")
+        print(f"  {py} scripts/rsi/run_mac_train.py --backend auto --train-steps 200 --parity-check")
         print(f"  {py} scripts/rsi/run_first_idea_loop.py --train-steps 100")
         print(f"  {py} scripts/rsi/run_b1k_aligned_eval.py --protocol")
         print("  DOWNLOAD_WEIGHTS=1 uv run python scripts/rsi/run_openpi_train.py --config pi0_libero_checklist_smoke")
+        if env.apple_silicon:
+            print(f"\nThis machine: Apple Silicon → preferred mode=mac (backend={env.mac_backend})")
         return 0
 
+    if args.mode == "mac":
+        return run(
+            [
+                py,
+                "scripts/rsi/run_mac_train.py",
+                "--backend",
+                "auto",
+                "--train-steps",
+                "200",
+                "--episodes-per-task",
+                "3",
+                "--parity-check",
+            ]
+        )
+
     if args.mode in {"cpu-stub", "all-safe"}:
-        rc = run([py, "scripts/rsi/run_first_idea_loop.py", "--train-steps", "200", "--episodes-per-task", "3"])
+        if args.mode == "all-safe" and env.apple_silicon and env.mac_backend in {"mlx", "mps"}:
+            rc = run(
+                [
+                    py,
+                    "scripts/rsi/run_mac_train.py",
+                    "--backend",
+                    "auto",
+                    "--train-steps",
+                    "200",
+                    "--episodes-per-task",
+                    "3",
+                    "--parity-check",
+                ]
+            )
+        else:
+            rc = run([py, "scripts/rsi/run_first_idea_loop.py", "--train-steps", "200", "--episodes-per-task", "3"])
         if rc != 0:
             return rc
 

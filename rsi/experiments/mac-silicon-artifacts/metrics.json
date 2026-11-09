@@ -1,0 +1,152 @@
+{
+  "idea": "subgoal_checklist_gated_recovery",
+  "platform": "apple_silicon",
+  "backend": "mlx",
+  "train_seconds": 0.036,
+  "memory_gb": 32.0,
+  "gaps_vs_cuda": [
+    "Official openpi π0/π0.5 JAX trainer (`scripts/train.py`) requires Linux + NVIDIA CUDA; not runnable on Mac.",
+    "Full π0 weight fine-tune and LIBERO/B1K GPU sims stay CUDA-only.",
+    "JAX Metal plugin (if installed) is experimental and not the supported openpi path.",
+    "Mac path trains the checklist head (MLX/MPS/CPU) with protocol-parity eval only."
+  ],
+  "filter_stats": {
+    "kept": 800,
+    "positive_rate": 0.61625,
+    "n_pos": 493,
+    "n_neg_kept": 307,
+    "filtered": true
+  },
+  "train": {
+    "steps": 200,
+    "device": "mlx",
+    "history_tail": [
+      {
+        "step": 160,
+        "loss": 0.6553048016875982,
+        "acc": 0.61625,
+        "backend": "mlx"
+      },
+      {
+        "step": 180,
+        "loss": 0.6515615018829704,
+        "acc": 0.6175,
+        "backend": "mlx"
+      },
+      {
+        "step": 199,
+        "loss": 0.6521394190564752,
+        "acc": 0.6175,
+        "backend": "mlx"
+      }
+    ],
+    "weights": [
+      -0.29909825325012207,
+      0.7481991648674011,
+      0.4414879083633423,
+      0.16031287610530853
+    ]
+  },
+  "baseline": {
+    "n_episodes": 24,
+    "mean_q_score": 0.18333333333333335,
+    "std_q_score": 0.29568658332016956,
+    "e2e_success_rate": 0.041666666666666664,
+    "per_task": {
+      "wb_kitchen_cup_to_sink": {
+        "mean_q_score": 0.3333333333333333,
+        "e2e_success_rate": 0.0
+      },
+      "wb_open_drawer_stow_bowl": {
+        "mean_q_score": 0.26666666666666666,
+        "e2e_success_rate": 0.0
+      },
+      "wb_table_clear_two_items": {
+        "mean_q_score": 0.5333333333333333,
+        "e2e_success_rate": 0.3333333333333333
+      },
+      "wb_fridge_fetch_bottle": {
+        "mean_q_score": 0.0,
+        "e2e_success_rate": 0.0
+      },
+      "wb_wipe_spill_then_bin": {
+        "mean_q_score": 0.0,
+        "e2e_success_rate": 0.0
+      },
+      "wb_dual_handover_pot": {
+        "mean_q_score": 0.20000000000000004,
+        "e2e_success_rate": 0.0
+      },
+      "wb_laundry_basket_transfer": {
+        "mean_q_score": 0.13333333333333333,
+        "e2e_success_rate": 0.0
+      },
+      "wb_multi_room_deliver_mug": {
+        "mean_q_score": 0.0,
+        "e2e_success_rate": 0.0
+      }
+    }
+  },
+  "checklist_gated": {
+    "n_episodes": 24,
+    "mean_q_score": 0.425,
+    "std_q_score": 0.42548991370732475,
+    "e2e_success_rate": 0.2916666666666667,
+    "per_task": {
+      "wb_kitchen_cup_to_sink": {
+        "mean_q_score": 0.6666666666666666,
+        "e2e_success_rate": 0.6666666666666666
+      },
+      "wb_open_drawer_stow_bowl": {
+        "mean_q_score": 0.6666666666666666,
+        "e2e_success_rate": 0.3333333333333333
+      },
+      "wb_table_clear_two_items": {
+        "mean_q_score": 0.6666666666666666,
+        "e2e_success_rate": 0.6666666666666666
+      },
+      "wb_fridge_fetch_bottle": {
+        "mean_q_score": 0.5333333333333333,
+        "e2e_success_rate": 0.3333333333333333
+      },
+      "wb_wipe_spill_then_bin": {
+        "mean_q_score": 0.4666666666666666,
+        "e2e_success_rate": 0.3333333333333333
+      },
+      "wb_dual_handover_pot": {
+        "mean_q_score": 0.06666666666666667,
+        "e2e_success_rate": 0.0
+      },
+      "wb_laundry_basket_transfer": {
+        "mean_q_score": 0.3333333333333333,
+        "e2e_success_rate": 0.0
+      },
+      "wb_multi_room_deliver_mug": {
+        "mean_q_score": 0.0,
+        "e2e_success_rate": 0.0
+      }
+    }
+  },
+  "delta": {
+    "mean_q_score": 0.24166666666666664,
+    "e2e_success_rate": 0.25
+  },
+  "parity": {
+    "backend": "mlx",
+    "suite_size_match": true,
+    "metric_keys_match": true,
+    "cpu_final_loss": 0.655624384106912,
+    "mac_final_loss": 0.6556244022026658,
+    "cpu_final_acc": 0.61625,
+    "mac_final_acc": 0.61625,
+    "weight_l2_delta": 6.22013587152465e-08,
+    "ok": true
+  },
+  "suite_size": 8,
+  "plots": [
+    "rsi/experiments/mac-silicon-artifacts/mac_train_curves.png",
+    "rsi/experiments/mac-silicon-artifacts/mac_suite_metrics.png",
+    "rsi/experiments/mac-silicon-artifacts/mac_per_task_qscore.png"
+  ],
+  "openpi_pi0": "not_runnable_on_mac"
+}
