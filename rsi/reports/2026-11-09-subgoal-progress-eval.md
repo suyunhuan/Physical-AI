@@ -38,8 +38,9 @@
 | 事实 | 位置 |
 |---|---|
 | `done` **就是** BDDL goal 合取式的结果 | `libero/libero/envs/bddl_base_domain.py:807` → `done = self._check_success()` |
+| 基类的 `_check_success` 只是 `return False` 的桩，真正的 AND 在 problem 子类里（运行时多态派发） | 基类 `bddl_base_domain.py:779-786`；子类实现见下一行 |
 | `_check_success()` 对 `parsed_problem["goal_state"]` 的每个 predicate 调 `_eval_predicate` 后做逻辑 AND | 6 个 problem 类文件，实现一致（如 `libero_tabletop_manipulation.py:135-143`） |
-| `_eval_predicate` 只处理长度 2（unary）和长度 3（binary）；其他 arity **静默返回 `None`** | 同上 `:145-161` |
+| `_eval_predicate` 只处理长度 2（unary）和长度 3（binary）；其他 arity **静默返回 `None`** | 同上 `:145-162` |
 | `ControlEnv.env` 持有 problem env，`OffScreenRenderEnv` 继承 `ControlEnv` | `libero/libero/envs/env_wrapper.py:56, 103-104, 152` |
 
 这条链路是本次 idea 的关键依据：逐项读取同一批 predicate，得到的进度轨迹与环境自身的成功位**按构造一致**，所以 `done=True` 时必须全部 atom 为真，可以当一致性自检。
@@ -56,22 +57,23 @@
 
 默认行为零变化：开关 `--report-subgoal-metrics` 默认 `False`，关掉即完整回退。
 
-| 文件 | 性质 | 行数 | 说明 |
-|---|---|---|---|
-| `packages/openpi-client/src/openpi_client/eval/subgoal_metrics.py` | 新增 | 279 | 通用 tracker / 聚合器，只依赖标准库，不 import LIBERO、JAX 或模型代码 |
-| `packages/openpi-client/src/openpi_client/eval/libero_subgoal.py` | 新增 | 88 | LIBERO BDDL 适配层，鸭子类型，`goal_provider` / `predicate_evaluator` 均可注入 |
-| `packages/openpi-client/src/openpi_client/eval/subgoal_metrics_test.py` | 新增 | 183 | 18 条单元测试 |
-| `packages/openpi-client/src/openpi_client/eval/libero_subgoal_test.py` | 新增 | 106 | 8 条单元测试 |
-| `scripts/subgoal_metrics_replay.py` | 新增 | 153 | 确定性 scripted 回放，固定期望值，不匹配即非零退出 |
-| `examples/libero/main_test.py` | 新增 | 222 | 桩环境集成测试，覆盖真实 `eval_libero` 循环 |
-| `examples/libero/main.py` | 修改 | +135 / -4 | 接入开关、每步采样、JSONL + summary 落盘 |
+| 文件 | 性质 | 说明 |
+|---|---|---|
+| `packages/openpi-client/src/openpi_client/eval/subgoal_metrics.py` | 新增 | 通用 tracker / 聚合器，只依赖标准库，不 import LIBERO、JAX 或模型代码 |
+| `packages/openpi-client/src/openpi_client/eval/libero_subgoal.py` | 新增 | LIBERO BDDL 适配层，鸭子类型，`goal_provider` / `predicate_evaluator` 均可注入 |
+| `packages/openpi-client/src/openpi_client/eval/subgoal_metrics_test.py` | 新增 | 19 条单元测试 |
+| `packages/openpi-client/src/openpi_client/eval/libero_subgoal_test.py` | 新增 | 8 条单元测试 |
+| `scripts/subgoal_metrics_replay.py` | 新增 | 确定性 scripted 回放，固定期望值，不匹配即非零退出 |
+| `examples/libero/main_test.py` | 新增 | 6 条桩环境集成测试，覆盖真实 `eval_libero` 循环 |
+| `examples/libero/main.py` | 修改 | 接入开关、每步采样、JSONL + summary 落盘 |
 
 `examples/libero/main.py` 的具体改动：
 
 - `Args` 新增 `report_subgoal_metrics: bool = False` 与 `subgoal_metrics_out_path: str`。
 - 新增 `_sample_goal_atoms()`：采样失败时**返回原因而不抛出**，调用方丢弃 tracker 并继续 rollout，避免把评测器故障记成策略失败。
 - rollout 循环内：warm-up 结束后、首个 policy action 之前采一次基线（step 0）；每个 policy action 之后采一次。`done` 的判定逻辑完全未改。
-- episode 结束后 finalize，写一行 JSONL；suite 结束写 summary JSON，并在 instrumentation coverage < 1 或出现 `done_atom_mismatch` 时打 error 日志。
+- episode 结束后 finalize，写一行 JSONL；suite 结束写 summary JSON，并在 instrumentation coverage < 1、出现 `done_atom_mismatch` 或出现异常中断 episode 时打 error 日志。
+- 被基础设施故障（策略服务器挂掉、推理超时）中断的 episode，其异常信息写进 `termination_reason`，聚合里单列 `abnormally_terminated_episodes`。否则这类 episode 会以一条低 progress 的「正常 episode」身份拉低 subgoal 指标且无任何标记 —— 这是 verifier 发现的问题。
 - 顺带把 `done = False` 在 episode 开头初始化（原代码若首步即异常，后面 `suffix = "success" if done else "failure"` 会 `NameError`）。这一行是结构化 finalize 的前提，不是无关重构。
 - 加了 `from __future__ import annotations`，因为评测容器是 Python 3.8。
 
@@ -89,29 +91,30 @@
 | regression | 存在 $g_{e,i,t-1}=1 \wedge g_{e,i,t}=0$；报 atom 级比率、episode 级比率、transition 计数、首次 regression 步 |
 | 一致性自检 | `done_atom_mismatch` = env 报成功但末步存在 atom 为假；非零即说明 atom 读数不可信，该轮口径作废 |
 | 仪表覆盖率 | `instrumentation_coverage` = 已插桩 episode / 全部 episode；< 1 时 subgoal 数字只描述子集，必须显式披露 |
+| 异常中断 | `abnormally_terminated_episodes` = 被基础设施故障中断的已插桩 episode 数；非零时部分 subgoal 数字反映的是中断的 rollout，不是策略能力 |
 
 ## 5. 本次实际跑了什么（全部在 CPU，可复现）
 
 ```bash
 export PATH="$HOME/.local/bin:$PATH"
 cd /agent/repos/Physical-AI
-git submodule update --init third_party/libero     # 仅为静态核实 LIBERO 源码
+git submodule update --init third_party/libero     # 仅为静态核实 LIBERO 源码，不改 gitlink
 uv venv --python 3.11 && uv sync --group dev
 
-# 1) 单元测试：26 passed
+# 1) 新增单元测试
 JAX_PLATFORMS=cpu uv run pytest -q packages/openpi-client/src/openpi_client/eval
 
-# 2) 桩环境集成测试（真实 eval_libero 循环）：5 passed
+# 2) 桩环境集成测试（真实 eval_libero 循环）
 JAX_PLATFORMS=cpu uv run pytest -q examples/libero/main_test.py
 
-# 3) 确定性回放（固定口径）：14 个聚合字段全部匹配
-JAX_PLATFORMS=cpu uv run python scripts/subgoal_metrics_replay.py
+# 3) 确定性回放（固定口径）
+JAX_PLATFORMS=cpu uv run python scripts/subgoal_metrics_replay.py; echo "exit=$?"
 
-# 4) 既有测试回归：70 passed
+# 4) 既有测试回归（该集合包含上面第 1 步的 27 条）
 JAX_PLATFORMS=cpu uv run pytest -q packages src/openpi/transforms_test.py \
   src/openpi/training/data_loader_test.py src/openpi/shared
 
-# 5) 静态检查：全部通过
+# 5) 静态检查
 uv run ruff check examples/libero scripts/subgoal_metrics_replay.py \
   packages/openpi-client/src/openpi_client/eval
 uv run ruff format --check examples/libero scripts/subgoal_metrics_replay.py \
@@ -119,35 +122,43 @@ uv run ruff format --check examples/libero scripts/subgoal_metrics_replay.py \
 
 # 6) Python 3.8 兼容性（评测容器口径）
 uv venv --python 3.8 /tmp/py38
-PYTHONPATH=packages/openpi-client/src /tmp/py38/bin/python -c "from openpi_client.eval import libero_subgoal"
+uv pip install --python /tmp/py38/bin/python tyro
+/tmp/py38/bin/python -m py_compile examples/libero/main.py
+PYTHONPATH=packages/openpi-client/src /tmp/py38/bin/python scripts/subgoal_metrics_replay.py
 ```
 
 ### 5.1 结果
 
 | 项 | 结果 |
 |---|---|
-| 新增单元测试 | **26 passed**（`subgoal_metrics` 18 + `libero_subgoal` 8） |
-| 桩环境集成测试 | **5 passed**（默认关闭不落盘 / 原子追踪 / 重跑不追加 / goal 不可读记为未插桩 / predicate 失败不中断 rollout） |
-| 确定性回放 | **匹配**，14 个聚合字段 + 两组 `first_achieved_step` 全部与手算一致 |
-| 既有测试回归 | **70 passed**，无新增失败 |
+| 新增单元测试 | **27 passed**（`subgoal_metrics` 19 + `libero_subgoal` 8） |
+| 桩环境集成测试 | **6 passed**（默认关闭不落盘 / 原子追踪 / 重跑不追加 / goal 不可读记为未插桩 / predicate 失败不中断 rollout / 异常中断被标记） |
+| 确定性回放 | **exit 0**，17 个数值聚合字段 + `uninstrumented_reasons` + 两组 `first_achieved_step` 全部与手算一致（`AggregateSubgoalMetrics` 共 18 个字段，脚本断言「除 `uninstrumented_reasons` 外每个字段都必须有期望值」，新增字段若未钉住会直接失败） |
+| 既有测试回归 | **71 passed**（含新增 27 条），无新增失败 |
 | ruff check / format | **通过** |
-| Python 3.8 导入与运行 | **通过**（CPython 3.8.20） |
+| Python 3.8 | **通过**：`main.py` 与回放脚本 `py_compile` 通过；回放脚本在 CPython 3.8.20 下**完整跑通并匹配固定口径**（不只是 import） |
+| 工作区副作用 | `git status --short` 干净；`git submodule status` 显示 `third_party/libero` 仍是 pin 住的 `f78abd6`、未被改动；`git diff --stat` 只含 10 个预期文件 |
 
 ### 5.2 回放固定口径数值（手算核对，非程序自证）
 
-两条 scripted episode：A 三个 atom，轨迹 `000 → 100 → 110 → 010 → 111`，end-to-end 成功；B 两个 atom，轨迹 `00 → 10 → 10`，失败。
+三条 scripted episode：A 三个 atom，轨迹 `000 → 100 → 110 → 010 → 111`，end-to-end 成功；B 两个 atom，轨迹 `00 → 10 → 10`，失败；C 完全无法插桩（模拟 goal 读取失败）。
 
 | 指标 | 期望（手算） | 实测 |
 |---|---|---|
-| 端到端成功率 | 1/2 = 0.5 | 0.5 |
+| 端到端成功率 | 1/3（C 留在分母里） | 1/3 |
+| 仪表覆盖率 | 2/3 | 2/3 |
 | subgoal micro | (3+1)/(3+2) = 0.8 | 0.8 |
 | subgoal macro | (1.0+0.5)/2 = 0.75 | 0.75 |
 | progress AUC macro | (7/15 + 1/3)/2 = 0.4 | 0.4 |
 | regressed atom rate | 1/5 = 0.2 | 0.2 |
 | episode regression rate | 1/2 = 0.5 | 0.5 |
+| 首次达成步均值（仅已达成 atom） | mean(1,2,4,1) = 2.0 | 2.0 |
 | first_achieved_step | `[1,2,4]` / `[1,null]` | 一致 |
 
-注意 episode A：端到端成功率和 subgoal 成功率都是满分，但它在 $t=3$ 丢掉了 atom 0。**只有 regression 指标能暴露这件事**，这正是本次改动的价值点。
+两个要点：
+
+1. episode A 的端到端成功率和 subgoal 成功率都是满分，但它在 $t=3$ 丢掉了 atom 0。**只有 regression 指标能暴露这件事**，这正是本次改动的价值点。
+2. episode C 不可插桩，端到端分母仍是 3 而 subgoal 分母是 2 —— `instrumentation_coverage = 2/3` 把这个差异显式写出来，而不是悄悄缩小样本集。
 
 ## 6. 阻塞项（本次采不到的指标，如实披露）
 
@@ -158,7 +169,22 @@ PYTHONPATH=packages/openpi-client/src /tmp/py38/bin/python -c "from openpi_clien
 | 五个 suite 的 adapter 覆盖率、predicate 抖动率、每步求值开销 | 需要运行中的仿真器 |
 | **CPU `debug` 配置训练回归烟雾测试** | **基线即失败**：`JAX_PLATFORMS=cpu uv run pytest -q scripts/train_test.py` 在**未改动代码的情况下**被 cgroup OOM kill（exit 137，`dmesg`：`Killed process ... anon-rss:13996344kB`），重试并限制 `OMP_NUM_THREADS=1` 仍然 137。根因：`src/openpi/models/pi0.py:84` 把 SigLIP 图像塔硬编码为 `So400m/14`（约 400M 参数），`paligemma_variant="dummy"` 只缩小 LLM 不缩小视觉塔；float32 的参数 + 梯度 + Adam 动量在 15GB / 4 vCPU 的机器上放不下。这是**环境限制，不是本次改动引入的回归**。 |
 
-替代证据：本次改动新增的是一个独立子包 `openpi_client.eval`，`src/openpi` 与 `scripts/train.py` 中无任何文件 import 它（已用 `rg` 核实：`src/openpi` 只 import `openpi_client` 的 `image_tools` / `base_policy` / `msgpack_numpy`），且导入 `openpi_client` 的既有测试（`transforms_test`、`data_loader_test`）全部通过。训练路径无接触面。
+替代证据：本次改动新增的是一个独立子包 `openpi_client.eval`，`src/openpi` 与 `scripts/train.py` 中无任何文件 import 它（已用 `rg` 核实：`src/openpi` 只 import `openpi_client` 的 `image_tools` / `base_policy` / `msgpack_numpy` / `action_chunk_broker`），且导入 `openpi_client` 的既有测试（`transforms_test`、`data_loader_test`）全部通过。训练路径无接触面。
+
+## 6.1 独立验收（verifier）
+
+verifier subagent 独立复核后提出的问题已全部处理：
+
+| 问题 | 处理 |
+|---|---|
+| `scripts/subgoal_metrics_replay.py` 用了 `list[...]` 却没有 `from __future__ import annotations`，在 Python 3.8 下会 `TypeError` | 已加 future import；并在 CPython 3.8.20 下完整跑通回放 |
+| `libero_subgoal.py` docstring 与 experiment-tree 把 AND 逻辑错误归属给 `bddl_base_domain.py`（基类其实是 `return False` 的桩） | 已改为「`:807` 调 `self._check_success()`，AND 实现在 problem 子类」 |
+| 回放只钉住 17 个聚合字段中的 14 个，且从未走过未插桩分支 | 已补 `mean_first_achieved_step_over_achieved`、未插桩场景，并加了「新增字段必须钉住」的断言 |
+| 异常中断的 episode 被当作正常已插桩 episode 结算，拉低 subgoal 指标且无标记 | 已加 `termination_reason` / `abnormally_terminated_episodes`，并补集成测试 |
+| 报告「Python 3.8 导入与运行通过」措辞超出所贴命令的证据 | 已改为真正运行完整流程，并贴出命令 |
+| `_eval_predicate` 行号应为 `:145-162` | 已更正 |
+
+verifier 本次运行的 Shell 工具被权限层封禁，因此它只完成了静态取证（文件、代码、口径公式手算、行号核实、LIBERO 源码核实、选择性报告审查），**运行时结论由本 agent 执行并在 §5.1 贴出**。这一点如实记录，不当作 verifier 已签字的运行时证据。
 
 ## 7. 结论
 
@@ -179,6 +205,7 @@ PYTHONPATH=packages/openpi-client/src /tmp/py38/bin/python -c "from openpi_clien
 3. **micro / macro 口径偏差**：micro 偏向 atom 多的任务。两者都报，解读时必须指明用的是哪个。
 4. **goal atom 被过度解释为规划子目标**：报告与代码注释都已明确限定为执行监控原子。
 5. **重复求值开销与副作用未知**：因此默认关闭，必须在真实仿真上验证后再考虑改默认值。
+6. **异常中断 episode 仍计入 subgoal 分子分母**：已用 `abnormally_terminated_episodes` 标记，但没有从 subgoal 统计里剔除。解读时若该计数非零，必须说明 subgoal 数字里混有中断 rollout。
 
 ### 下一步（按预期收益排序）
 
