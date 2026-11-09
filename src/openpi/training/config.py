@@ -931,6 +931,31 @@ _CONFIGS = [
         num_train_steps=20_000,
     ),
     #
+    # RSI first-idea: checklist-gated recovery smoke fine-tune on Libero (GPU + weights required).
+    # Local launcher: scripts/rsi/run_openpi_train.py --config pi0_libero_checklist_smoke
+    # Keep steps small for first-version smoke; raise after validating the pipeline.
+    #
+    TrainConfig(
+        name="pi0_libero_checklist_smoke",
+        model=pi0_config.Pi0Config(paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"),
+        data=LeRobotLiberoDataConfig(
+            repo_id="physical-intelligence/libero",
+            base_config=DataConfig(prompt_from_task=True),
+            extra_delta_transform=True,
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
+        num_train_steps=200,
+        batch_size=8,
+        save_interval=100,
+        freeze_filter=pi0_config.Pi0Config(
+            paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"
+        ).get_freeze_filter(),
+        ema_decay=None,
+        wandb_enabled=False,
+        exp_name="rsi_checklist_smoke",
+        overwrite=True,
+    ),
+    #
     # Debugging configs.
     #
     TrainConfig(
