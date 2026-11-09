@@ -1,0 +1,77 @@
+{
+  "schema_id": "wheeled_bimanual_v0",
+  "status": "draft",
+  "owner": "suyunhuan",
+  "created": "2026-11-09",
+  "morphology": "wheeled base + torso lift + dual 7-DoF arms + two grippers",
+  "model_action_dim": 32,
+  "physical_dim": 20,
+  "fields": [
+    {
+      "name": "base_velocity",
+      "start": 0,
+      "size": 3,
+      "action_space": "absolute",
+      "unit": "vx[m/s], vy[m/s], wz[rad/s]",
+      "notes": "differential-drive bases must hold vy == 0; global pose never occupies a control slot"
+    },
+    {
+      "name": "torso_lift",
+      "start": 3,
+      "size": 1,
+      "action_space": "delta",
+      "unit": "m"
+    },
+    {
+      "name": "left_arm_joints",
+      "start": 4,
+      "size": 7,
+      "action_space": "delta",
+      "unit": "rad"
+    },
+    {
+      "name": "left_gripper",
+      "start": 11,
+      "size": 1,
+      "action_space": "absolute",
+      "unit": "normalized [0,1]"
+    },
+    {
+      "name": "right_arm_joints",
+      "start": 12,
+      "size": 7,
+      "action_space": "delta",
+      "unit": "rad"
+    },
+    {
+      "name": "right_gripper",
+      "start": 19,
+      "size": 1,
+      "action_space": "absolute",
+      "unit": "normalized [0,1]"
+    }
+  ],
+  "delta_mask_spec": [-3, 8, -1, 7, -1],
+  "image_slots": {
+    "base_0_rgb": "head_front_rgb",
+    "left_wrist_0_rgb": "left_wrist_rgb",
+    "right_wrist_0_rgb": "right_wrist_rgb"
+  },
+  "reference_configs": [
+    "pi05_libero",
+    "pi0_aloha",
+    "pi05_droid"
+  ],
+  "eval_protocol": {
+    "suite": "household_long_v0",
+    "status": "not frozen",
+    "num_tasks": 10,
+    "trials_per_task": 10,
+    "seeds": [7, 17, 27, 37, 47, 57, 67, 77, 87, 97],
+    "primary_metrics": [
+      "literal_partial_credit",
+      "end_to_end_success_rate",
+      "subgoal_success_rate"
+    ]
+  }
+}
